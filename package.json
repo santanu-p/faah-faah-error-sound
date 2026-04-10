@@ -1,0 +1,65 @@
+{
+  "name": "faah-faah-error-sound",
+  "displayName": "Faah Faah Error Sound",
+  "description": "Plays a funny sound when editor diagnostics or terminal commands fail.",
+  "version": "0.0.1",
+  "publisher": "your-name",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "faahSound.testSound",
+        "title": "Faah Sound: Test Sound"
+      }
+    ],
+    "configuration": {
+      "title": "Faah Sound",
+      "properties": {
+        "faahSound.enableEditorDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Play sound when new editor errors appear or increase."
+        },
+        "faahSound.enableTerminalFailures": {
+          "type": "boolean",
+          "default": true,
+          "description": "Play sound when a terminal command exits with a non-zero code."
+        },
+        "faahSound.soundPath": {
+          "type": "string",
+          "default": "",
+          "description": "Optional absolute path to an MP3 file or folder. If folder, a random MP3 is selected."
+        },
+        "faahSound.editorSoundPath": {
+          "type": "string",
+          "default": "",
+          "description": "Optional absolute path to an MP3 file or folder for editor diagnostics."
+        },
+        "faahSound.terminalSoundPath": {
+          "type": "string",
+          "default": "",
+          "description": "Optional absolute path to an MP3 file or folder for terminal failures."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.4.5"
+  }
+}
