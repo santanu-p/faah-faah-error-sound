@@ -6,8 +6,9 @@ import * as vscode from "vscode";
 import { getFaahConfig, resolveConfiguredSoundPath, SoundSource } from "./config";
 
 const execFileAsync = promisify(execFile);
-const PER_CLIP_TIMEOUT_MS = 1200;
+const PER_CLIP_TIMEOUT_MS = 4000;
 const PLAYBACK_TIMEOUT_BUFFER_MS = 1000;
+const FALLBACK_CLIP_PLAY_MS = 950;
 
 export class SoundPlayer {
   constructor(
@@ -94,7 +95,13 @@ export class SoundPlayer {
       "  $player.Open([Uri]$path)",
       "  $player.Volume = 1.0",
       "  $player.Play()",
-      "  Start-Sleep -Milliseconds 950",
+      "  $waited = 0",
+      "  while (-not $player.NaturalDuration.HasTimeSpan -and $waited -lt 2000) {",
+      "    Start-Sleep -Milliseconds 50",
+      "    $waited += 50",
+      "  }",
+      `  $durationMs = if ($player.NaturalDuration.HasTimeSpan) { [int][Math]::Ceiling($player.NaturalDuration.TimeSpan.TotalMilliseconds) } else { ${FALLBACK_CLIP_PLAY_MS} }`,
+      "  Start-Sleep -Milliseconds ([Math]::Max(200, [Math]::Min(5000, $durationMs + 50)))",
       "  $player.Stop()",
       "}",
       "$player.Close()"
