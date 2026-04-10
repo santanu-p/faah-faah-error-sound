@@ -9,7 +9,7 @@ VS Code extension that plays a funny sound when:
 
 - Windows-first audio playback using built-in PowerShell APIs
 - No rate limiting: each matching error trigger plays immediately
-- Random MP3 selection from bundled `audio/` folder (including subfolders)
+- Random MP3 chain playback from bundled `audio/` folder (including subfolders)
 - Command: `Faah Sound: Test Sound`
 
 ## Run the extension locally (before publishing)
@@ -33,6 +33,7 @@ VS Code extension that plays a funny sound when:
 1. Open Command Palette in Extension Development Host.
 2. Run `Faah Sound: Test Sound`.
 3. Expected: sound plays immediately.
+4. If clips are short, multiple clips are chained into one play event.
 
 ### 2) Editor diagnostics test
 
@@ -77,6 +78,7 @@ Set one or more settings in VS Code:
 - `faahSound.soundPath`
 - `faahSound.editorSoundPath`
 - `faahSound.terminalSoundPath`
+- `faahSound.combineClipCount` (default: `3`)
 
 Each setting can point to either:
 
@@ -86,6 +88,7 @@ Each setting can point to either:
 Behavior:
 
 - If specific setting paths are valid, extension uses them.
+- Extension chains multiple random clips per trigger based on `faahSound.combineClipCount`.
 - If no setting path is provided, extension uses bundled `audio/` files.
 - If no MP3 is found, extension falls back to beep sound.
 

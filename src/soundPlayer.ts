@@ -16,11 +16,11 @@ export class SoundPlayer {
   public async play(source: SoundSource): Promise<void> {
     const config = getFaahConfig();
 
-    const soundPath = this.resolveSoundPath(source, config);
+    const soundPaths = this.resolveSoundPaths(source, config);
 
     try {
-      if (soundPath) {
-        await this.playMp3File(soundPath);
+      if (soundPaths.length > 0) {
+        await this.playMp3Files(soundPaths);
       } else {
         await this.playFallbackBeep();
       }
@@ -29,13 +29,13 @@ export class SoundPlayer {
     }
   }
 
-  private resolveSoundPath(source: SoundSource, config: ReturnType<typeof getFaahConfig>): string | undefined {
+  private resolveSoundPaths(source: SoundSource, config: ReturnType<typeof getFaahConfig>): string[] {
     const configuredPath = resolveConfiguredSoundPath(source, config);
 
     if (configuredPath) {
       const configuredCandidates = this.collectMp3Files(configuredPath);
       if (configuredCandidates.length > 0) {
-        return pickRandom(configuredCandidates);
+        return pickRandomSequence(configuredCandidates, config.combineClipCount);
       }
 
       this.output.appendLine(`[Faah] Configured sound file not found: ${configuredPath}`);
@@ -44,15 +44,15 @@ export class SoundPlayer {
     const bundledAudioDir = vscode.Uri.joinPath(this.context.extensionUri, "audio").fsPath;
     const bundledCandidates = this.collectMp3Files(bundledAudioDir);
     if (bundledCandidates.length > 0) {
-      return pickRandom(bundledCandidates);
+      return pickRandomSequence(bundledCandidates, config.combineClipCount);
     }
 
     const bundledPath = vscode.Uri.joinPath(this.context.extensionUri, "assets", "default.mp3").fsPath;
     if (existsSync(bundledPath)) {
-      return bundledPath;
+      return [bundledPath];
     }
 
-    return undefined;
+    return [];
   }
 
   private collectMp3Files(targetPath: string): string[] {
@@ -77,28 +77,31 @@ export class SoundPlayer {
     }
   }
 
-  private async playMp3File(filePath: string): Promise<void> {
+  private async playMp3Files(filePaths: readonly string[]): Promise<void> {
     if (process.platform !== "win32") {
       await this.playFallbackBeep();
       return;
     }
 
-    const escapedPath = escapePowerShellSingleQuotedString(filePath);
+    const escapedPaths = filePaths.map((path) => `'${escapePowerShellSingleQuotedString(path)}'`).join(", ");
     const script = [
-      `$p = '${escapedPath}'`,
+      `$paths = @(${escapedPaths})`,
       "Add-Type -AssemblyName PresentationCore",
       "$player = New-Object System.Windows.Media.MediaPlayer",
-      "$player.Open([Uri]$p)",
-      "$player.Volume = 1.0",
-      "$player.Play()",
-      "Start-Sleep -Milliseconds 950",
+      "foreach ($path in $paths) {",
+      "  $player.Open([Uri]$path)",
+      "  $player.Volume = 1.0",
+      "  $player.Play()",
+      "  Start-Sleep -Milliseconds 950",
+      "  $player.Stop()",
+      "}",
       "$player.Close()"
     ].join("; ");
 
     await execFileAsync(
       "powershell.exe",
       ["-NoProfile", "-NonInteractive", "-Sta", "-Command", script],
-      { windowsHide: true, timeout: 5000 }
+      { windowsHide: true, timeout: Math.max(5000, filePaths.length * 1200 + 1000) }
     );
   }
 
@@ -149,9 +152,37 @@ function collectMp3FilesFromDirectory(directoryPath: string): string[] {
   return files;
 }
 
-function pickRandom<T>(items: readonly T[]): T {
-  const index = Math.floor(Math.random() * items.length);
-  return items[index];
+function pickRandomSequence<T>(items: readonly T[], count: number): T[] {
+  if (items.length === 0 || count <= 0) {
+    return [];
+  }
+
+  const picked: T[] = [];
+
+  while (picked.length < count) {
+    const cycle = shuffle(items);
+    for (const item of cycle) {
+      picked.push(item);
+      if (picked.length >= count) {
+        break;
+      }
+    }
+  }
+
+  return picked;
+}
+
+function shuffle<T>(items: readonly T[]): T[] {
+  const copy = [...items];
+
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = copy[i];
+    copy[i] = copy[j];
+    copy[j] = tmp;
+  }
+
+  return copy;
 }
 
 function getErrorMessage(error: unknown): string {

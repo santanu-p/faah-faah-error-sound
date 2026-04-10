@@ -10,6 +10,7 @@ export interface FaahConfig {
   soundPath: string;
   editorSoundPath: string;
   terminalSoundPath: string;
+  combineClipCount: number;
 }
 
 export function getFaahConfig(): FaahConfig {
@@ -20,7 +21,8 @@ export function getFaahConfig(): FaahConfig {
     enableTerminalFailures: configuration.get<boolean>("enableTerminalFailures", true),
     soundPath: getTrimmedStringSetting(configuration, "soundPath"),
     editorSoundPath: getTrimmedStringSetting(configuration, "editorSoundPath"),
-    terminalSoundPath: getTrimmedStringSetting(configuration, "terminalSoundPath")
+    terminalSoundPath: getTrimmedStringSetting(configuration, "terminalSoundPath"),
+    combineClipCount: getBoundedIntegerSetting(configuration, "combineClipCount", 3, 1, 10)
   };
 }
 
@@ -42,4 +44,28 @@ export function resolveConfiguredSoundPath(source: SoundSource, config: FaahConf
 
 function getTrimmedStringSetting(configuration: vscode.WorkspaceConfiguration, key: string): string {
   return configuration.get<string>(key, "").trim();
+}
+
+function getBoundedIntegerSetting(
+  configuration: vscode.WorkspaceConfiguration,
+  key: string,
+  fallback: number,
+  min: number,
+  max: number
+): number {
+  const raw = configuration.get<number>(key, fallback);
+  if (!Number.isFinite(raw)) {
+    return fallback;
+  }
+
+  const value = Math.trunc(raw);
+  if (value < min) {
+    return min;
+  }
+
+  if (value > max) {
+    return max;
+  }
+
+  return value;
 }
