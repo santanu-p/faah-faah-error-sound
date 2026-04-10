@@ -85,7 +85,7 @@ export class SoundPlayer {
       return;
     }
 
-    const escapedPaths = filePaths.map((path) => escapePowerShellSingleQuotedString(path)).join(", ");
+    const escapedPaths = filePaths.map((path) => `'${escapePowerShellSingleQuotedString(path)}'`).join(", ");
     const script = [
       `$paths = @(${escapedPaths})`,
       "Add-Type -AssemblyName PresentationCore",
@@ -127,7 +127,7 @@ export class SoundPlayer {
 }
 
 function escapePowerShellSingleQuotedString(value: string): string {
-  return `'${value.replace(/'/g, "''")}'`;
+  return value.replace(/'/g, "''");
 }
 
 function collectMp3FilesFromDirectory(directoryPath: string): string[] {
