@@ -9,6 +9,9 @@ const execFileAsync = promisify(execFile);
 const PER_CLIP_TIMEOUT_MS = 4000;
 const PLAYBACK_TIMEOUT_BUFFER_MS = 1000;
 const FALLBACK_CLIP_PLAY_MS = 950;
+const CLIP_DURATION_BUFFER_MS = 50;
+const MIN_CLIP_SLEEP_MS = 200;
+const MAX_CLIP_SLEEP_MS = 5000;
 
 export class SoundPlayer {
   constructor(
@@ -101,7 +104,7 @@ export class SoundPlayer {
       "    $waited += 50",
       "  }",
       `  $durationMs = if ($player.NaturalDuration.HasTimeSpan) { [int][Math]::Ceiling($player.NaturalDuration.TimeSpan.TotalMilliseconds) } else { ${FALLBACK_CLIP_PLAY_MS} }`,
-      "  Start-Sleep -Milliseconds ([Math]::Max(200, [Math]::Min(5000, $durationMs + 50)))",
+      `  Start-Sleep -Milliseconds ([Math]::Max(${MIN_CLIP_SLEEP_MS}, [Math]::Min(${MAX_CLIP_SLEEP_MS}, $durationMs + ${CLIP_DURATION_BUFFER_MS})))`,
       "  $player.Stop()",
       "}",
       "$player.Close()"
