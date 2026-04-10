@@ -48,6 +48,13 @@
           "type": "string",
           "default": "",
           "description": "Optional absolute path to an MP3 file or folder for terminal failures."
+        },
+        "faahSound.combineClipCount": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Number of short MP3 clips to chain together for each trigger."
         }
       }
     }
