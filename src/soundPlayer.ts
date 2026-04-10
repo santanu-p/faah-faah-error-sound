@@ -6,6 +6,8 @@ import * as vscode from "vscode";
 import { getFaahConfig, resolveConfiguredSoundPath, SoundSource } from "./config";
 
 const execFileAsync = promisify(execFile);
+const PER_CLIP_TIMEOUT_MS = 1200;
+const PLAYBACK_TIMEOUT_BUFFER_MS = 1000;
 
 export class SoundPlayer {
   constructor(
@@ -83,7 +85,7 @@ export class SoundPlayer {
       return;
     }
 
-    const escapedPaths = filePaths.map((path) => `'${escapePowerShellSingleQuotedString(path)}'`).join(", ");
+    const escapedPaths = filePaths.map((path) => escapePowerShellSingleQuotedString(path)).join(", ");
     const script = [
       `$paths = @(${escapedPaths})`,
       "Add-Type -AssemblyName PresentationCore",
@@ -101,7 +103,10 @@ export class SoundPlayer {
     await execFileAsync(
       "powershell.exe",
       ["-NoProfile", "-NonInteractive", "-Sta", "-Command", script],
-      { windowsHide: true, timeout: Math.max(5000, filePaths.length * 1200 + 1000) }
+      {
+        windowsHide: true,
+        timeout: Math.max(5000, filePaths.length * PER_CLIP_TIMEOUT_MS + PLAYBACK_TIMEOUT_BUFFER_MS)
+      }
     );
   }
 
@@ -122,7 +127,7 @@ export class SoundPlayer {
 }
 
 function escapePowerShellSingleQuotedString(value: string): string {
-  return value.replace(/'/g, "''");
+  return `'${value.replace(/'/g, "''")}'`;
 }
 
 function collectMp3FilesFromDirectory(directoryPath: string): string[] {
